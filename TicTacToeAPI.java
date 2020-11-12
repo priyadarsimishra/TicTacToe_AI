@@ -44,11 +44,13 @@ public class TicTacToeAPI {
             }
         }
         // checks diagonal wins
-        if (board[0][0].equals(board[1][1]) && board[1][1].equals(board[2][2]) && board[0][0].getPiece() != null) {
+        if (board[0][0].equals(board[1][1]) && board[1][1].equals(board[2][2])
+                && !board[0][0].getPiece().getValue().equals(" ")) {
             winType = "diagonal";
             return board[0][0];
         }
-        if (board[0][2].equals(board[1][1]) && board[1][1].equals(board[2][0]) && board[0][2].getPiece() != null) {
+        if (board[0][2].equals(board[1][1]) && board[1][1].equals(board[2][0])
+                && !board[0][2].getPiece().getValue().equals(" ")) {
             winType = "diagonal";
             return board[0][2];
         }

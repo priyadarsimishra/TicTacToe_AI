@@ -10,6 +10,7 @@ public class Board extends MouseAdapter {
     private int rows, cols, movesMade;
     private boolean winnerFound;
     private String playerChoice;
+    private boolean playerMoveDone;
 
     public Board() {
         board = new Square[3][3];
@@ -21,9 +22,32 @@ public class Board extends MouseAdapter {
         winnerFound = false;
         movesMade = 0;
         playerChoice = "";
+        playerMoveDone = true;
     }
 
-    public void update() {
+    public void update() 
+    {
+        if (currentTurn.equals(" "))
+            currentTurn = api.changeTurns(currentTurn);
+        if (playerMoveDone) 
+        {
+        	if(board != null)
+        	{
+        		computerMove();
+        		currentTurn = api.changeTurns(currentTurn);
+                playerMoveDone = false;
+        	}
+        }
+        winner = api.winner(board, rows, cols);
+        if (winner != null && !winner.getPiece().getValue().equals(" ")) 
+        {
+            winnerFound = true;
+        }
+        if (winner == null && movesMade == 9) 
+        {
+            winnerFound = true;
+        }
+
     }
 
     public void draw(Graphics g) {
@@ -84,6 +108,7 @@ public class Board extends MouseAdapter {
         winnerFound = false;
         winner = null;
         playerChoice = "";
+        playerMoveDone = true;
     }
 
     public void mousePressed(MouseEvent e) {
@@ -92,19 +117,13 @@ public class Board extends MouseAdapter {
         if (getRowClicked(mx, my) != -1 && getColClicked(mx, my) != -1 && !winnerFound) {
             int squareRow = getRowClicked(mx, my);
             int squareCol = getColClicked(mx, my);
-            if (board[squareCol - 1][squareRow - 1].getPiece().getValue().equals(" ")) {
-                currentTurn = api.changeTurns(currentTurn);
-            }
-            if (board[squareCol - 1][squareRow - 1].getPiece().getValue().equals(" ")) {
-                board[squareCol - 1][squareRow - 1].setPiece(new Piece(currentTurn, squareRow, squareCol));
-                movesMade++;
-            }
-            winner = api.winner(board, rows, cols);
-            if (winner != null && !winner.getPiece().getValue().equals(" ")) {
-                winnerFound = true;
-            }
-            if (winner == null && movesMade == 9) {
-                winnerFound = true;
+            if (currentTurn.equals("X")) {
+                if (board[squareCol - 1][squareRow - 1].getPiece().getValue().equals(" ")) {
+                    board[squareCol - 1][squareRow - 1].setPiece(new Piece(currentTurn, squareRow, squareCol));
+                    movesMade++;
+                    currentTurn = api.changeTurns(currentTurn);
+                    playerMoveDone = true;
+                }
             }
             // boardTester();
         }
@@ -115,6 +134,113 @@ public class Board extends MouseAdapter {
                 System.exit(1);
             }
         }
+    }
+
+    public void computerMove() {
+        Square[][] tempBoard = copyBoard(board);
+        Square tempWinner = null;
+        String comp = "O";
+        String playMove = "X";
+        /**
+         * Take the winning move
+         * */
+        for (int i = 0; i < rows; i++) 
+        {
+            for (int j = 0; j < cols; j++) 
+            {
+                if (tempBoard[j][i].getPiece().getValue().equals(" ")) 
+                {
+                    tempBoard[j][i].setPiece(new Piece(comp, i + 1, j + 1));
+                    tempWinner = api.winner(tempBoard, 3, 3);
+                    if (tempWinner != null && winner == null) 
+                    {
+                    	board[j][i].setPiece(new Piece(comp, i + 1, j + 1));
+                    	movesMade++;
+                        return;
+                    }
+                    else if(winner == null)
+                    {
+                    	tempBoard[j][i].setPiece(new Piece(" ",i+1,j+1));
+                    	tempWinner = null;
+                    }
+                }
+            }
+        }
+        /**
+         * Stop the opponent from winning
+         * */
+        for(int i = 0;i<rows;i++)
+        {
+        	for(int j = 0;j<cols;j++)
+        	{
+        		if (tempBoard[j][i].getPiece().getValue().equals(" ")) 
+        		{
+        			tempBoard[j][i].setPiece(new Piece(playMove, i + 1, j + 1));
+        			tempWinner = api.winner(tempBoard, rows, cols);
+        			if(tempWinner != null && winner == null)
+        			{
+        				board[j][i].setPiece(new Piece(comp,i+1,j+1));
+        				movesMade++;
+        				return;
+        			}
+        			else
+        			{
+        				tempBoard[j][i].setPiece(new Piece(" ",i+1,j+1));
+                    	tempWinner = null;
+        			}
+        		}
+        	}
+        }
+        /**
+         * Select center if open
+         * */
+        if(board[1][1].getPiece().getValue().equals(" "))
+        {
+        	board[1][1].setPiece(new Piece(comp, 2,2));
+        	movesMade++;
+        	return;
+        }
+        /**
+         * Select any corners
+         * */
+        for(int i = (int)(Math.random()*rows);i<rows;i++)
+        {
+        	for(int j = (int)(Math.random()*rows);j<cols;j++)
+        	{
+        		if(board[j][i].getPiece().getValue().equals(" ") && (i != 1 || j != 1))
+        		{
+        			 board[j][i].setPiece(new Piece(comp, j,i));
+        			 movesMade++;
+        			 return;
+        		}
+        	}
+        }
+        for(int i = 0;i<rows;i++)
+        {
+        	for(int j = 0;j<cols;j++)
+        	{
+        		if(board[j][i].getPiece().getValue().equals(" "))
+        		{
+        			board[j][i].setPiece(new Piece(comp, j,i));
+       			 	movesMade++;
+       			 	return;
+        		}
+        	}
+        }
+    }
+    public Square[][] copyBoard(Square[][] b) {
+        Square[][] toReturn = new Square[rows][cols];
+        for (int i = 0; i < rows; i++) 
+        {
+            for (int j = 0; j < cols; j++) 
+            {
+                Piece p = b[i][j].getPiece();
+                int row = b[i][j].getRow();
+                int col = b[i][j].getCol();
+                toReturn[i][j] = new Square(row, col, new Piece(p.getValue(),p.getRow(),p.getCol()));
+            }
+        }
+        return toReturn;
     }
 
     public boolean buttonClicked(MouseEvent e, int bx, int by, String buttonName) {
@@ -162,7 +288,8 @@ public class Board extends MouseAdapter {
     }
 
     // delete later
-    private void boardTester() {
+    private void boardTester(Square[][] board) 
+    {
         System.out.println("\n");
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
